@@ -1,0 +1,80 @@
+%position <Int>
+%derive <Show> ParseError
+%derive <Show> Token
+
+%token <Int> INT
+%token <String> ID
+%token TRUE
+%token FALSE
+%token LEQ      "<="
+%token TIMES    "*"
+%token PLUS     "+"
+%token SUB		"-"
+%token LPAREN   "("
+%token RPAREN   ")"
+%token LET
+%token LETREC
+%token EQUALS   "="
+%token ASSIGN   ":="
+%token IN
+%token IF
+%token THEN
+%token ELSE
+%token FUN
+%token ARROW	"->"
+%token SEMI		";"
+%token REF
+%token DEREF	"!"
+%token DO
+%token EOF
+
+%nonassoc 	"->"
+%nonassoc 	IN
+%right 		";"
+%nonassoc 	ELSE
+%right 		":="
+%left 		"<="
+%left 		"+" "-"
+%left 		"*"
+
+%start prog
+
+%%
+
+prog -> Expr:
+	| e = expr EOF { e }
+
+expr -> Expr:
+	| e = simpl_expr										{ e }
+	| e1 = expr "<=" e2 = expr 								{ Binop(Leq, e1, e2) }
+	| e1 = expr "*" e2 = expr 								{ Binop(Mult, e1, e2) }
+	| e1 = expr "+" e2 = expr 								{ Binop(Add, e1, e2) }
+	| e1 = expr "-" e2 = expr 								{ Binop(Sub, e1, e2) }
+	| e1 = expr ":=" e2 = expr 								{ Binop(Assign, e1, e2) }
+	| LET x = ID "=" e1 = expr IN e2 = expr 				{ Let(x, e1, e2) }
+	| LET f = ID xs = params "=" e1 = expr IN e2 = expr 	{ Let(f, make_fun(xs, e1), e2) }
+	| LETREC x = ID "=" e1 = expr IN e2 = expr 				{ LetRec(x, e1, e2) }
+	| LETREC f = ID xs = params "=" e1 = expr IN e2 = expr 	{ LetRec(f, make_fun(xs, e1), e2) }
+	| IF e1 = expr THEN e2 = expr ELSE e3 = expr 			{ If(e1, e2, e3) }
+	| f = simpl_expr es = args								{ make_apply(f, es) }
+	| FUN xs = params "->" e = expr							{ make_fun(xs, e) }
+	| e1 = expr ";" e2 = expr								{ Let("_", e1, e2) }
+	| REF e = simpl_expr									{ UniOp(Ref, e) }
+	| DO e = expr											{ Fun("_", e) }
+
+simpl_expr -> Expr:
+	| i = INT 				{ Int(i) }
+	| x = ID 				{ Var(x) }
+	| TRUE 					{ Bool(true) }
+	| FALSE 				{ Bool(false) }
+	| "(" ")" 				{ Unit }
+	| "(" e = expr ")"		{ e } 
+	| "!" e = simpl_expr	{ UniOp(DeRef, e) }
+
+params -> @list.List[String]:
+	| x = ID xs = params	{ @list.cons(x, xs) }
+	| x = ID				{ @list.singleton(x) }
+
+args -> @list.List[Expr]:
+	| e = simpl_expr es = args	{ @list.cons(e, es) }
+	| e = simpl_expr			{ @list.singleton(e) }

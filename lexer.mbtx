@@ -1,0 +1,37 @@
+let white = [' ' '\t' '\n']+;
+let digit = ['0'-'9'];
+let int = '-'? digit+;
+let letter = ['a'-'z' '_' 'A'-'Z'];
+let id = letter (letter | digit)*;
+
+rule read() -> (Token, Int, Int) raise {
+    parse {
+        white => { read(lexbuf) }
+        "true" as t => { (TRUE, $startpos(t), $endpos(t)) }
+        "false" as t => { (FALSE, $startpos(t), $endpos(t)) }
+        "<=" as t => { (LEQ, $startpos(t), $endpos(t)) }
+        "*" as t => { (TIMES, $startpos(t), $endpos(t)) }
+        "+" as t => { (PLUS, $startpos(t), $endpos(t)) }
+        "(" as t => { (LPAREN, $startpos(t), $endpos(t)) }
+        ")" as t => { (RPAREN, $startpos(t), $endpos(t)) }
+        "->" as t => { (ARROW, $startpos(t), $endpos(t)) }
+        "fun" as t => { (FUN, $startpos(t), $endpos(t)) }
+        "do" as t => { (DO, $startpos(t), $endpos(t)) }
+        "ref" as t => { (REF, $startpos(t), $endpos(t)) }
+        "!" as t => { (DEREF, $startpos(t), $endpos(t)) }
+        ":=" as t => { (ASSIGN, $startpos(t), $endpos(t)) }
+        "let" as t => { (LET, $startpos(t), $endpos(t)) }
+        "letrec" as t => { (LETREC, $startpos(t), $endpos(t)) }
+        "=" as t => { (EQUALS, $startpos(t), $endpos(t)) }
+        "in" as t => { (IN, $startpos(t), $endpos(t)) }
+        ";" as t => { (SEMI, $startpos(t), $endpos(t)) }
+        "if" as t => { (IF, $startpos(t), $endpos(t)) }
+        "then" as t => { (THEN, $startpos(t), $endpos(t)) }
+        "else" as t => { (ELSE, $startpos(t), $endpos(t)) }
+        id as t => { (ID(t), $startpos(t), $endpos(t)) }
+        int as t => { (INT(parse_int(t)), $startpos(t), $endpos(t)) }
+        "-" as t => { (SUB, $startpos(t), $endpos(t)) }
+        eof as t => { (EOF, $startpos(t), $endpos(t)) }
+        _ as t => { raise(Unrecognized(t, $startpos(t))) }
+    }
+}
